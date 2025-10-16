@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # LLM Code Deployment API
 
 A scalable, production-ready API for building, deploying, and updating web applications using LLM assistance. This system can handle millions of records and provides effective SEO optimization for generated applications.
@@ -274,3 +275,6 @@ For support and questions:
 - Analytics and metrics dashboard
 - Multi-tenant support
 - Advanced security features
+=======
+# project1-tds
+>>>>>>> 23483f9c6976b89c69c275bd909ffa26dbe8b8c9
