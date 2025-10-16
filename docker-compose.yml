@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  llm-deployment-api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - GITHUB_PAT=${GITHUB_PAT}
+      - LLM_API_KEY=${LLM_API_KEY}
+      - VERIFICATION_SECRET=${VERIFICATION_SECRET}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_FILE=${LOG_FILE:-app.log}
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Add Redis for caching and task queues
+  # redis:
+  #   image: redis:7-alpine
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   restart: unless-stopped
+
+  # Optional: Add PostgreSQL for task tracking
+  # postgres:
+  #   image: postgres:15-alpine
+  #   environment:
+  #     POSTGRES_DB: llm_deployment
+  #     POSTGRES_USER: llm_user
+  #     POSTGRES_PASSWORD: llm_password
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+  #   restart: unless-stopped
+
+# volumes:
+#   redis_data:
+#   postgres_data:
