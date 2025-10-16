@@ -50,23 +50,9 @@ VERIFICATION_SECRET = os.getenv("VERIFICATION_SECRET")
 if not all([GITHUB_PAT, VERIFICATION_SECRET]):
     raise ValueError("Missing required environment variables: GITHUB_PAT, VERIFICATION_SECRET")
 
-<<<<<<< HEAD
 # LLM_API_KEY is optional - if not provided, will use aipipe.org fallback
 if not LLM_API_KEY:
     logger.warning("LLM_API_KEY not provided, will use aipipe.org fallback")
-=======
-@app.get("/ping")
-def ping():
-    return {"message": "pong"}
-
-
-@app.post("/task")
-async def handle_task(request: Request):
-    data = await request.json()
-    
-    # 1️⃣ Verify secret
-    if data.get("secret") != VERIFICATION_SECRET:
-        return {"error": "Invalid secret!"}
 
 # Initialize OpenAI client with new API (only if API key is provided)
 if LLM_API_KEY:
@@ -164,7 +150,7 @@ async def generate_app_code(brief: str, checks: List[str], attachments: List[Dic
                     max_tokens=4000,
                     temperature=0.7
                 )
-                generated_content = response.choices[0].message["content"]
+                generated_content = response.choices[0].message.content
             except Exception as e:
                 if "429" in str(e) or "quota" in str(e).lower():
                     logger.warning("OpenAI quota exceeded, trying aipipe.org fallback")
@@ -700,16 +686,19 @@ async def health_check():
         health_status["status"] = "degraded"
     
     # Check OpenAI connectivity
-    try:
-        openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": "test"}],
-            max_tokens=1
-        )
-        health_status["services"]["openai"] = "connected"
-    except Exception as e:
-        health_status["services"]["openai"] = f"error: {str(e)}"
-        health_status["status"] = "degraded"
+    if openai_client:
+        try:
+            openai_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": "test"}],
+                max_tokens=1
+            )
+            health_status["services"]["openai"] = "connected"
+        except Exception as e:
+            health_status["services"]["openai"] = f"error: {str(e)}"
+            health_status["status"] = "degraded"
+    else:
+        health_status["services"]["openai"] = "not configured (using aipipe.org fallback)"
     
     return health_status
 
