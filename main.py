@@ -67,7 +67,6 @@ async def handle_task(request: Request):
     # 1️⃣ Verify secret
     if data.get("secret") != VERIFICATION_SECRET:
         return {"error": "Invalid secret!"}
->>>>>>> 3a44616399e0ef6af1c4d0d7d4e7679041dbee90
 
 # Initialize OpenAI client with new API (only if API key is provided)
 if LLM_API_KEY:
