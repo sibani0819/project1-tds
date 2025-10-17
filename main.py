@@ -60,6 +60,18 @@ if LLM_API_KEY:
 else:
     openai_client = None
 
+# Configure aipipe and DeepSeek (OpenRouter) fallbacks from environment
+from aipipe_integration import set_aipipe_credentials, deepseek_client
+
+AIPIPE_TOKEN = os.getenv("AIPIPE_TOKEN") or os.getenv("AIPIPE_KEY")
+if AIPIPE_TOKEN:
+    set_aipipe_credentials(AIPIPE_TOKEN)
+
+# Allow overriding DeepSeek key explicitly
+DEEPSEEK_KEY = os.getenv("DeepSeek_Key")
+if DEEPSEEK_KEY:
+    deepseek_client.key = DEEPSEEK_KEY
+
 # Pydantic models for request/response validation
 class TaskRequest(BaseModel):
     email: str = Field(..., description="Student email ID")
@@ -672,7 +684,8 @@ async def health_check():
         "timestamp": datetime.now().isoformat(),
         "services": {
             "github": "unknown",
-            "openai": "unknown"
+            "openai": "unknown",
+            "deepseek": "unknown"
         }
     }
     
@@ -699,6 +712,29 @@ async def health_check():
             health_status["status"] = "degraded"
     else:
         health_status["services"]["openai"] = "not configured (using aipipe.org fallback)"
+
+    # Check DeepSeek/OpenRouter connectivity
+    try:
+        from aipipe_integration import deepseek_client
+
+        # Try a very small request to validate connectivity when a key exists
+        if deepseek_client and deepseek_client.key:
+            resp = requests.post(
+                f"{deepseek_client.base_url}/v1/chat/completions",
+                headers={"Authorization": f"Bearer {deepseek_client.key}", "Content-Type": "application/json"},
+                json={"model": "tngtech/deepseek-r1t2-chimera:free", "messages": [{"role": "user", "content": "hi"}]},
+                timeout=10,
+            )
+            if resp.status_code == 200:
+                health_status["services"]["deepseek"] = "connected"
+            else:
+                health_status["services"]["deepseek"] = f"error: {resp.status_code}"
+                health_status["status"] = "degraded"
+        else:
+            health_status["services"]["deepseek"] = "not configured"
+    except Exception as e:
+        health_status["services"]["deepseek"] = f"error: {str(e)}"
+        health_status["status"] = "degraded"
     
     return health_status
 
